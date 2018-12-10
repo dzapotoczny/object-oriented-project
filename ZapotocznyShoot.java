@@ -1,8 +1,19 @@
 // Dan Zapotoczny
+// Shoot to Score
+// This project is major modification to the linedrawer assignment we had. This program is a game that creates many targets of different
+// sizes on the screen and your goal as the player is to try shoot as many of the targets as possible in a 30 second time frame. 
+// This program also keeps track of
+// your score. More points are awarded the closer you are to the bulls eye. Also the smaller the target, the larger the point multiplier is.
+// The target class is the model class. The linepanel class is the view class and the controller class(which I now realize I probably should've
+// changed). I wanted to add more features such as a start screen or window that gives a brief overview of how to play as well as a jbutton 
+// that begins the game as soon as the player clicks the "start" button, but I was spending more time trying to figure out how to fix 
+// the concurrent modification exception, which I've never came across before. Now I'm out of time and I didn't add what I wanted to add
+// nor did I fix what I wanted to fix. Here is my attempt at a game.
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Container;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -21,33 +32,30 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Random;
-import java.util.Scanner;
-
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
 import javax.swing.Timer;
+import java.util.ArrayList;
+import java.util.Random;
+import java.util.Scanner;
 
-class Target {				// I added color, which determines the color of the point, line, which determines whether the point is connected
-	private int x,x1,x2;			// by a line, and pointsize, which determines the size of the point, as characteristics of the point object
+
+
+class Target {				// takes in the x, y, and r of each ring of the target 
+	private int x,x1,x2;			
 	private int y,y1,y2;
-	private int r,r1,r2;
-	
+	private int r,r1,r2;	
 	public int getX() {
 		return x;
 	}
 	public void setX(int x) {
 		this.x = x;
 	}
-	
 	public int getX1() {
 		return x1;
 	}
@@ -65,8 +73,7 @@ class Target {				// I added color, which determines the color of the point, lin
 	}
 	public void setY(int y) {
 		this.y = y;
-	}
-	
+	}	
 	public int getY1() {
 		return y1;
 	}
@@ -85,7 +92,6 @@ class Target {				// I added color, which determines the color of the point, lin
 	public void setR(int r) {
 		this.r = r;
 	}
-	
 	public int getR1() {
 		return r1;
 	}
@@ -143,45 +149,11 @@ class LinePanel extends JPanel implements MouseMotionListener,MouseListener,KeyL
 	private ArrayList<Target> targets;
 	private String message;
 	private Color color;
-	private int r,score=0;	
-	private LineFrame lfram;
-	private Timer tim3;
-	private int count = 0,timeRemaining=30;
+	private int score=0, count = 0,timeRemaining=30;	
+	private boolean targetShot=false,ignoreMouse=false;
 	public void keyTyped(KeyEvent e) {}
 	public void keyReleased(KeyEvent e) {}
 	public void keyPressed(KeyEvent e) {
-		if (e.getKeyCode() == KeyEvent.VK_R) {
-			color = Color.RED;
-		} else if (e.getKeyCode() == KeyEvent.VK_B) {
-			color = Color.BLUE;
-		}
-		else if (e.getKeyCode() == KeyEvent.VK_L) {
-			color = Color.BLACK;
-		}
-		else if (e.getKeyCode() == KeyEvent.VK_G) {
-			color = Color.GREEN;
-		}
-		else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {	//detects if escape was pressed
-												//disables the drawing of the line
-		//setEsc(true);										//sets esc variable to true which shows that escape was pressed
-		}
-		repaint();
-	}
-	public void setTim3(Timer tim3) {
-		this.tim3 = tim3;
-	}
-	public Timer getTim3() {
-		return tim3;
-	}
-	public void startTim3() {
-		setTim3(lfram.getTim3());
-		getTim3().start();
-		lfram.setTim3(getTim3());
-	}
-	public void stopTim3() {
-		setTim3(lfram.getTim3());
-		getTim3().stop();
-		lfram.setTim3(getTim3());
 	}
 	public int getCx() {				
 		return cx;
@@ -201,13 +173,6 @@ class LinePanel extends JPanel implements MouseMotionListener,MouseListener,KeyL
 	public void setColor(Color col) {
 		color = col;
 	}
-	public int getR() {
-		return r;
-	}
-	public void setPointSize(int r) {
-		this.r = r;
-		
-	}
 	public int getScore() {
 		return score;
 	}
@@ -226,34 +191,54 @@ class LinePanel extends JPanel implements MouseMotionListener,MouseListener,KeyL
 	public void setTimeRemaining(int timeRemaining) {
 		this.timeRemaining = timeRemaining;
 	}
+	public boolean isTargetShot() {
+		return targetShot;
+	}
+	public void setTargetShot(boolean targetShot) {
+		this.targetShot = targetShot;
+	}
+	public boolean isIgnoreMouse() {
+		return ignoreMouse;
+	}
+	public void setIgnoreMouse(boolean ignoreMouse) {
+		this.ignoreMouse = ignoreMouse;
+	}
 	public void mouseEntered(MouseEvent e) {}
 	public void mouseExited(MouseEvent e) {}
 	public void mouseClicked(MouseEvent e) {	//gets current location
-		int x = e.getX();
-		int y = e.getY();
-//		lfram.getTim3().stop();
-		for(Target t : targets) {
-			if(t.within2(x, y)) {
-				targets.remove(t);
-				setScore((1/t.getR2())*300);
-				repaint();
-			}else if(t.within1(x, y)) {
-				targets.remove(t);
-				setScore((1/t.getR1())*200);
-				repaint();
-			}else if(t.within(x, y)) {
-				targets.remove(t);
-				setScore((1/t.getR())*100);
-				repaint();
+		if(isIgnoreMouse()==false) {
+			int x = e.getX();
+			int y = e.getY();
+			
+	//		lfram.getTim3().stop();
+			for(Target t : targets) {
+				double multiplier2 = 1/(double)(t.getR2());
+				double multiplier1 = 1/(double)(t.getR1());
+				double multiplier = 1/(double)(t.getR());
+				if(t.within2(x, y)) {
+					setTargetShot(true);
+					targets.remove(t);
+					setScore(getScore()+(int)(multiplier2*3000));
+					repaint();
+				}else if(t.within1(x, y)) {
+					setTargetShot(true);
+					targets.remove(t);
+					setScore(getScore()+(int)(multiplier1*2000));
+					repaint();
+				}else if(t.within(x, y)) {
+					setTargetShot(true);
+					targets.remove(t);
+					setScore(getScore()+(int)(multiplier*1000));
+					repaint();
+				}
 			}
+			setTargetShot(false);
+			requestFocusInWindow();
+			repaint();
 		}
-//		lfram.getTim3().start();
-		requestFocusInWindow();
-		repaint();
 	}
 	public void mousePressed(MouseEvent e) {}
 	public void mouseReleased(MouseEvent e) {}
-	
 	public void mouseMoved(MouseEvent e) {
 		setCx(e.getX());
 		setCy(e.getY());
@@ -261,22 +246,11 @@ class LinePanel extends JPanel implements MouseMotionListener,MouseListener,KeyL
 		requestFocusInWindow();
 		repaint();
 	}
-	public void mouseDragged(MouseEvent e) {	//same description as mouseClicked() above
-		/*Color c = getColor();
-		boolean l = getLine();
-		int p = getPointSize();
-		points.add(new Point(e.getX(),e.getY(),c,l,p));
-		if(getEsc()) {
-			setLine(true);
-			setEsc(false);
-		}
-		repaint();*/
+	public void mouseDragged(MouseEvent e) {
 	}
 	public void actionPerformed(ActionEvent e) {
-//		Timer();
 		repaint();
 	}
-	
 	public LinePanel(ArrayList<Target> targets) {
 		this.targets = targets;
 		setFocusable(true);
@@ -301,7 +275,6 @@ class LinePanel extends JPanel implements MouseMotionListener,MouseListener,KeyL
 			int x2 = t.getX2();
 			int y2 = t.getY2();
 			int d2 = 2*t.getR2();
-			
 			g.setColor(Color.BLUE);
 			g.fillOval(x, y, d, d);
 			g.setColor(Color.WHITE);
@@ -310,6 +283,7 @@ class LinePanel extends JPanel implements MouseMotionListener,MouseListener,KeyL
 			g.fillOval(x2,y2,d2,d2);
 		}
 		g.setColor(Color.BLACK);
+		g.setFont(new Font("TimesRoman",Font.BOLD,20));
 		g.drawString("Time Remaining: "+getTimeRemaining(),425,700);
 		g.drawString("Score: "+getScore(), 425, 675);
 	}
@@ -333,10 +307,10 @@ class PointRandomizer {
 		rnd = new Random();
 	}
 }
-class LineFrame extends JFrame implements ActionListener,KeyListener {	//added various menus and menu items for each function
+class LineFrame extends JFrame implements ActionListener,KeyListener {
 	private ArrayList<Target> targets;
 	private PointRandomizer pr;
-	private Timer timer, tim1, tim2, tim3;		//individual timer variables for each animation speed
+	private Timer timer, tim3;		//individual timer variables for the timer responsible for countdown as well as moving the targets
 	private LinePanel lpan;
 	private int count=0,timeRemaining;
 	
@@ -368,22 +342,11 @@ class LineFrame extends JFrame implements ActionListener,KeyListener {	//added v
 	public void keyTyped(KeyEvent e) {}
 	public void keyReleased(KeyEvent e) {}
 	public void keyPressed(KeyEvent e) {
-		/*if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-			lpan.setPointSize(Integer.parseInt(txtPointSize.getText()));
-			lpan.repaint();
-		}*/
 	}
-	
-	
-	
 	public void configureMenu() {
 		JMenuBar bar = new JMenuBar();
 		JMenu mnuFile = new JMenu("File");
-
-		
-	
 		setJMenuBar(bar);
-	
 		JMenuItem miOpen = new JMenuItem("Open");
 		miOpen.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -449,12 +412,13 @@ class LineFrame extends JFrame implements ActionListener,KeyListener {	//added v
 		mnuEdit.add(miClear);
 		bar.add(mnuEdit);
 		setJMenuBar(bar);	
-		JMenu mnuTimer = new JMenu("Speed");
+		JMenu mnuTimer = new JMenu("Pause");
 		JMenuItem miStart = new JMenuItem("Resume");
 		miStart.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				tim3.start();
 				timer.start();
+				lpan.setIgnoreMouse(false);
 			}
 		});
 		JMenuItem miStop = new JMenuItem("Stop");
@@ -462,13 +426,11 @@ class LineFrame extends JFrame implements ActionListener,KeyListener {	//added v
 			public void actionPerformed(ActionEvent e) {
 				tim3.stop();
 				timer.stop();
+				lpan.setIgnoreMouse(true);
 			}
 		});
-		
-
 		mnuTimer.add(miStart);
 		mnuTimer.add(miStop);
-
 		bar.add(mnuTimer);
 	}
 
@@ -486,19 +448,15 @@ class LineFrame extends JFrame implements ActionListener,KeyListener {	//added v
 		c.add(lpan,BorderLayout.CENTER);
 		JPanel panSouth = new JPanel();
 		panSouth.setLayout(new FlowLayout());
-//		JLabel lblPointSize = new JLabel("Time Remaining: ");
-//		panSouth.add(lblPointSize);
 		c.add(panSouth,BorderLayout.SOUTH);
 		
 		configureMenu();
 	}
-	public void Timer() {
-		
+	public void Timer() {	
 		timer = new Timer(1000, new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				setCount(getCount()+1);
-				
+				setCount(getCount()+1);	
 				if (count < 31) {
 					setTimeRemaining((30 - getCount()));
 					lpan.setTimeRemaining(getTimeRemaining());
@@ -508,22 +466,19 @@ class LineFrame extends JFrame implements ActionListener,KeyListener {	//added v
 				else {
 					timer.stop();
 					getTim3().stop();
+					lpan.setIgnoreMouse(true);
 				}
 			}
 		});
 		timer.start();
 		}
-	
-	public LineFrame(ArrayList<Target> targets) {		//creates each timer for each animation speed
+	public LineFrame(ArrayList<Target> targets) {		//creates each timers
 		this.targets = targets;
 		pr = new PointRandomizer();
-		tim1 = new Timer(300,this);
-		tim2 = new Timer(150,this);
 		setTim3(new Timer(50,this));
 		getTim3().start();
 		Timer();
 		setFocusable(true);
-		
 		configureUI();
 	}
 }
@@ -563,21 +518,8 @@ public class ZapotocznyShoot {
 					System.out.println(p);
 				}
 			} catch (Exception ex) {
-
 			}
-		
-
-		
-		/*for (Point p : points) {
-			System.out.println(p);
-		}
-		*/
-		LineFrame lf = new LineFrame(targets);
-		
+		LineFrame lf = new LineFrame(targets);	
 		lf.setVisible(true);
 	}
 }
-
-
-
-
